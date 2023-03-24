@@ -1,0 +1,53 @@
+******************
+* Building OCaml *
+******************
+
+CPPFLAGS=-DTSAN_DEBUG ./configure --enable-tsan
+make -j 16
+
+*****************
+* Building Test *
+*****************
+~/Work/ocaml-tsan/ocamlopt.opt -I ~/Work/ocaml-tsan/stdlib/ -I ~/Work/ocaml-tsan/otherlibs/unix/ -I ~/Work/ocaml-tsan/runtime/ -runtime-variant d -g -ccopt -fsanitize=thread -ccopt -O1 -ccopt -g unix.cmxa callbacks.c exn_in_callback.ml
+
+****************
+* Running Test *
+****************
+LD_PRELOAD=~/Work/tsan/tsan_verbose.so ./a.out >out.txt 2>&1
+LD_PRELOAD=~/Work/tsan/tsan_verbose.so rr record -- ./a.out
+
+********************
+* Filtering output *
+********************
+grep -e "from camlExn_in_callback\." -e "^[^\[]" -e 'forced' out.txt
+
+
+********************************************************************************
+external print_and_call_ocaml_h : unit -> unit = "print_and_call_ocaml_h"
+
+exception ExnA
+exception ExnB
+
+let r = ref 0
+let [@inline never] race () = ignore @@ !r
+
+let [@inline never] i () =
+  raise ExnB
+
+let [@inline never] h () =
+  i ()
+
+let _ = Callback.register "ocaml_h" h
+
+let [@inline never] g () =
+  print_and_call_ocaml_h ()
+
+let [@inline never] f () =
+  try g () with
+  | ExnB -> race ()
+
+let () =
+  let d = Domain.spawn (fun () -> Unix.sleep 1; r := 1) in
+  f (); Unix.sleep 1;
+  Domain.join d
+********************************************************************************
