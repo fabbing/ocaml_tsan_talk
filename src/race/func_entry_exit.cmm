@@ -15,15 +15,14 @@
    (app{simple_race.ml:7,47-59} "camlUnix.sleep_1076" arg/534 val)))
 
 # Before
-(function{simple_race.ml:6,24-59} camlSimple_race.fun_521 (param/513: val)
- (let (newval/531 21 loc/530 (load val "camlSimple_race"))
-   (extcall "__tsan_write8" loc/530 ->unit) 1 (store val loc/530 newval/531))
- (app{simple_race.ml:6,46-58} "camlUnix.sleep_1076" 3 val))
-
-(function{simple_race.ml:7,24-60} camlSimple_race.fun_525 (param/515: val)
- (let loc/533 (load val "camlSimple_race")
-   (extcall "__tsan_read8" loc/533 ->unit) 1 (load_mut val loc/533))
- []
- (app{simple_race.ml:7,47-59} "camlUnix.sleep_1076" 3 val))
+(function{simple_race.ml:6,24-59} camlSimple_race.fun_521
+  (param/513: val)
+ (let (newval/531 21 loc/530 r/503)
+   (extcall "__tsan_write8" loc/530 ->unit) 1
+   (store val loc/530 newval/531))
+ (let x/514
+   (let loc/533 r/503
+     (extcall "__tsan_read8" loc/533 ->unit) 1 (load_mut val loc/533)))
+   (app{simple_race.ml:7,47-59} g/42 x/514 val))
 
 # After
